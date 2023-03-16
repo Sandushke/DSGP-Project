@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -8,10 +9,10 @@ import tensorflow as tf
 
 app = FastAPI()
 
-origins = ["http://localhost",
-           "http://localhost:3000",
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
 ]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -21,7 +22,13 @@ app.add_middleware(
 )
 
 MODEL = tf.keras.models.load_model("../models/0")
-CLASS_NAMES = ["Acne", "Eczema", "Melanoma Skin Cancer Nevi and Moles", "Psoriasis"]
+
+CLASS_NAMES = ['Acne', 'Eczema', 'Melanoma Skin Cancer Nevi and Moles', 'Psoriasis']
+
+
+@app.get("/ping")
+async def ping():
+    return "Hello, I am alive"
 
 
 def read_file_as_image(data) -> np.ndarray:
@@ -29,21 +36,45 @@ def read_file_as_image(data) -> np.ndarray:
     return image
 
 
-@app.post("/prediction")
+@app.post("/predict")
 async def predict(
-        file: UploadFile = File(...)):
-
+        file: UploadFile = File(...)
+):
     image = read_file_as_image(await file.read())
-    imgBatch = np.expand_dims(image, 0)
+    img_batch = np.expand_dims(image, 0)
 
-    prediction = MODEL.predict(imgBatch)
+    predictions = MODEL.predict(img_batch)
 
-    predictedDisease = CLASS_NAMES[np.argmax(prediction[0])]
-    confidence = np.max(prediction[0])
+    predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
+    confidence = np.max(predictions[0])
     return {
-        "class": predictedDisease,
-        'Confidence level': float(confidence)
+        'class': predicted_class,
+        'confidence': float(confidence)
     }
 
 if __name__ == "__main__":
     uvicorn.run(app, host='localhost', port=8000)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
